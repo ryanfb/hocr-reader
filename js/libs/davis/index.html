@@ -1,0 +1,58 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <title>Davis tests</title>
+
+    <!-- dependencies -->
+    <script src="/tests/javascripts/jquery.js"></script>
+
+    <!-- QUnit -->
+    <script src="/tests/javascripts/qunit.js"></script>
+    <script src="/tests/javascripts/load.js"></script>
+    <link rel="stylesheet" href="/tests/stylesheets/qunit.css" type="text/css" media="screen" />
+
+    <script src="/tests/factories.js" type="text/javascript" charset="utf-8"></script>
+    <script src="/tests/helpers.js" type="text/javascript" charset="utf-8"></script>
+
+    <!-- davis -->
+    <script src="/lib/davis.js"></script>
+    <script src="/lib/davis.utils.js"></script>
+    <script src="/lib/davis.listener.js"></script>
+    <script src="/lib/davis.logger.js"></script>
+    <script src="/lib/davis.route.js"></script>
+    <script src="/lib/davis.router.js"></script>
+    <script src="/lib/davis.history.js"></script>
+    <script src="/lib/davis.location.js"></script>
+    <script src="/lib/davis.request.js"></script>
+    <script src="/lib/davis.event.js"></script>
+    <script src="/lib/davis.app.js"></script>
+    <script src="/lib/extensions/davis.hashRouting.js"></script>
+
+  </head>
+  <body>
+    <h1 id="qunit-header">Davis Tests</h1>
+    <h2 id="qunit-banner"></h2>
+    <h2 id="qunit-userAgent"></h2>
+    <ol id="qunit-tests"></ol>
+
+    <div id="qunit-fixture"></div>
+
+    <!-- Tests -->
+    <script type="text/javascript">
+      load(
+        '/tests/test_route.js',
+        '/tests/test_router.js',
+        '/tests/test_hashRouting.js',
+        '/tests/test_request.js',
+        '/tests/test_event.js',
+        '/tests/test_app.js',
+        '/tests/test_utils.js',
+        '/tests/test_location.js'
+      )
+
+      load('/tests/test_history.js', function () {
+        return (typeof window.history.pushState == 'function')
+      })
+    </script>
+  </body>
+</html>
