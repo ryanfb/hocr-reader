@@ -1,0 +1,53 @@
+span.alternatives del {
+  display: none !important;
+}
+
+span.alternatives ins {
+  text-decoration: none !important;
+}
+
+#page_image{
+        width: 50%;
+        float:left;
+  margin-top: 10px;
+        }
+#page_right{
+        width: 50%;
+        float:left;
+        display: inline-block;
+        }
+
+body {
+  font-family: 'Cardo', serif;
+  font-size: 16px;
+  background: #eec;
+  line-height: 130%;
+}
+
+span.ocr_word:first-of-type {
+    margin-left:0;
+}
+
+span.ocr_word:last-of-type {
+    margin-right:0;
+}
+
+span.ocr_line {
+    display: block;
+}
+
+span.ocr_line + br {
+    display: none;
+}
+p{
+    margin: 0;
+    padding: 0;
+}
+
+p span:first-child {
+	text-indent: 2em;
+}
+
+p:first-child span:first-child {
+       text-indent: 0em;
+}
