@@ -5,6 +5,7 @@
         "jquery": null,
         "underscore": null,
         "github-api": null,
+        "sprintf": null,
         "davis": null
     }
 }
