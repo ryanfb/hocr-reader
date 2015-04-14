@@ -2,7 +2,7 @@
 ---
 
 hocr_reader_github_oauth =
-  client_id: = '42369538e348b6247c16'
+  client_id: '42369538e348b6247c16'
   redirect_uri: 'https://ryanfb.github.io/hocr-reader/'
   gatekeeper_uri: 'https://hocr-reader-gatekeeper.herokuapp.com/authenticate'
 
