@@ -35,7 +35,7 @@ hocr_handler = (req) ->
             console.log "hOCR fetch error: #{textStatus}"
           success: (data) ->
             hocr_html = atob(decodeURIComponent(escape(data.content.replace(/\s/g, ""))))
-            css_rewrite = hocr_html.replace('http://heml.mta.ca/Rigaudon/hocr.css','https://ryanfb.github.io/hocr-reader/hocr.css')
+            css_rewrite = hocr_html.replace('http://heml.mta.ca/Rigaudon/hocr.css','{{ site.url }}/hocr.css')
             $('#page_right').append($('<iframe>').attr('style','width:49%').attr('height','800').attr('frameBorder','0').attr('src','data:text/html;charset=utf-8;base64,'+btoa(css_rewrite)))
 
 
