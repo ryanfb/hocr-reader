@@ -10,7 +10,6 @@ html, body { height: 100%; margin: 0; padding: 0; }
 .nav_right {
   float: right;
   padding-left: 1em;
-  display: inline;
 }
 
 .nav_left {

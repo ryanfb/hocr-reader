@@ -53,6 +53,9 @@ make_nav_bar = (user, repo, page, total_pages) ->
   page_jump_form.append($('<input>').attr('type','text').attr('placeholder',page).attr('size','4').attr('id','page_jump_id'))
   page_jump_form.append($('<label>').text(" / #{total_pages}"))
   nav_bar.append(page_jump_form)
+  search_form = $('<form>',class:'nav_left').attr('onsubmit',"Davis.location.assign(new Davis.Request(\"#{window.location.pathname}#/search/#{user}/#{repo}/\"+$('#search_input').val()))")
+  search_form.append($('<input>').attr('type','text').attr('placeholder','Search').attr('size','40').attr('id','search_input'))
+  nav_bar.append(search_form)
   if page < total_pages
     nav_bar.append($('<a>',class:'nav_right').attr('href',"/hocr-reader/#/read/#{user}/#{repo}/#{format_page(total_pages)}").text('Last'))
     nav_bar.append($('<a>',class:'nav_right').attr('href',"/hocr-reader/#/read/#{user}/#{repo}/#{format_page(page + 1)}").text('Next'))
@@ -161,13 +164,42 @@ github_oauth_flow = (req) ->
     set_cookie('access_token',access_token,31536000)
     set_cookie('access_token_expires_at',expires_in_to_date(31536000))
     window.location = '{{ site.url }}/'
-  
+
+run_search = (req) ->
+  query = "repo:#{req.params['github_user']}/#{req.params['github_repo']} language:html #{req.params['query']}"
+  console.log query
+  search_params =
+    q: query
+    per_page: 100
+  if get_cookie('access_token')
+    search_params['access_token'] = get_cookie('access_token')
+  $.ajax "https://api.github.com/search/code?#{$.param(search_params)}",
+    type: 'GET'
+    dataType: 'json'
+    crossDomain: 'true'
+    error: (jqXHR, textStatus, errorThrown) ->
+      console.log "run_search error: #{textStatus}"
+    success: (data) ->
+      $(document.body).empty()
+      $(document.body).append($('<h1>').text('Search Results'))
+      $(document.body).append($('<p>').text(req.params['query']))
+      $(document.body).append($('<p>').text("#{data.total_count} hits"))
+      results_ul = $('<ul>')
+      for item in data.items
+        results_li = $('<li>')
+        page = item.name.replace('p','').replace('.html','')
+        href = "{{ site.url }}/#/read/#{req.params['github_user']}/#{req.params['github_repo']}/#{page}"
+        results_li.append($('<a>').attr('href',href).text(item.name))
+        results_ul.append(results_li)
+      $(document.body).append(results_ul)
+
 davis_app = Davis ->
   this.get '/', no_repo
   this.get '/hocr-reader/', no_repo
   this.get '/hocr-reader/#/read/:github_user/:github_repo', (req) ->
     Davis.location.assign(new Davis.Request("/hocr-reader/#/read/#{req.params['github_user']}/#{req.params['github_repo']}/0001"))
   this.get '/hocr-reader/#/read/:github_user/:github_repo/:page', hocr_reader
+  this.get '/hocr-reader/#/search/:github_user/:github_repo/*query', run_search
   this.get '/hocr-reader/#/auth/*splat', github_oauth_flow
 
 github = new Github({
