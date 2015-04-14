@@ -34,7 +34,7 @@ check_rate_limit = (callback, callback_params) ->
       success: (data) ->
         if data.rate.remaining == 0
           $(document.body).empty()
-          $(document.body).append($('<p>').text("You've exceeded GitHub's rate limit for unauthenticated applications. Authenticate with GitHub (not yet implemented), or wait #{data.rate.reset - Math.floor(Date.now() / 1000)} seconds."))
+          $(document.body).append($('<p>').text("You've exceeded GitHub's rate limit for unauthenticated applications. Authenticate with GitHub, or wait #{data.rate.reset - Math.floor(Date.now() / 1000)} seconds."))
           $(document.body).append($('<a>').attr('href',github_oauth_url()).text('Authenticate with GitHub'))
         else
           callback(callback_params)
