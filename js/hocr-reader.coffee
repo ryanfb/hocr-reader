@@ -6,6 +6,18 @@ github = new Github({
     auth: 'oauth'
   })
 
+check_rate_limit = () ->
+  $.ajax 'https://api.github.com/rate_limit',
+    type: 'GET'
+    dataType: 'json'
+    crossDomain: 'true'
+    error: (jqXHR, textStatus, errorThrown) ->
+      console.log "Image fetch error: #{textStatus}"
+    success: (data) ->
+      if data.rate.remaining == 0
+        $(document.body).empty()
+        $(document.body).append($('<p>').text("You've exceeded GitHub's rate limit for unauthenticated applications. Authenticate with GitHub, or wait #{data.rate.reset - Math.floor(Date.now() / 1000)} seconds"))
+
 hocr_handler = (req) ->
   console.log(req.params)
   $(document.body).empty()
