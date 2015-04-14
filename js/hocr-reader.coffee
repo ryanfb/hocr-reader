@@ -79,7 +79,7 @@ hocr_handler = (req) ->
         console.log page_image
         $('.content').append($('<div>').attr('id','page_image'))
         $('.content').append($('<div>').attr('id','page_right'))
-        $.ajax page_image.url + if get_cookie('access_token') then "?access_token=#{get_cookie('access_token')}" else '',
+        $.ajax page_image.url + (if get_cookie('access_token') then "?access_token=#{get_cookie('access_token')}" else ''),
           type: 'GET'
           dataType: 'json'
           crossDomain: 'true'
@@ -88,7 +88,7 @@ hocr_handler = (req) ->
           success: (data) ->
             $('#page_image').append($('<img>').attr('style','width:100%').attr('src','data:image/jpeg;charset=utf-8;base64,'+data.content))
         console.log page_hocr
-        $.ajax page_hocr.url + if get_cookie('access_token') then "?access_token=#{get_cookie('access_token')}" else '',
+        $.ajax page_hocr.url + (if get_cookie('access_token') then "?access_token=#{get_cookie('access_token')}" else ''),
           type: 'GET'
           dataType: 'json'
           crossDomain: 'true'
