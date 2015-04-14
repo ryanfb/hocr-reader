@@ -2,28 +2,42 @@
 ---
 
 hocr_reader_github_oauth =
-  client_id: '42369538e348b6247c16'
-  redirect_uri: 'https://ryanfb.github.io/hocr-reader/'
-  gatekeeper_uri: 'https://hocr-reader-gatekeeper.herokuapp.com/authenticate'
+  client_id: '{{ site.github_api_key }}'
+  redirect_uri: '{{ site.url }}/#/auth/'
+  gatekeeper_uri: 'https://auth-server.herokuapp.com/proxy'
 
-github = new Github({
-    token: ''
-    auth: 'oauth'
-  })
+github_oauth_url = ->
+  "https://github.com/login/oauth/authorize?#{$.param(hocr_reader_github_oauth)}"
 
 check_rate_limit = (callback, callback_params) ->
-  $.ajax 'https://api.github.com/rate_limit',
-    type: 'GET'
-    dataType: 'json'
-    crossDomain: 'true'
-    error: (jqXHR, textStatus, errorThrown) ->
-      console.log "check_rate_limit error: #{textStatus}"
-    success: (data) ->
-      if data.rate.remaining == 0
-        $(document.body).empty()
-        $(document.body).append($('<p>').text("You've exceeded GitHub's rate limit for unauthenticated applications. Authenticate with GitHub (not yet implemented), or wait #{data.rate.reset - Math.floor(Date.now() / 1000)} seconds"))
-      else
-        callback(callback_params)
+  if get_cookie('access_token')
+    $.ajax "https://api.github.com/rate_limit?access_token=#{get_cookie('access_token')}",
+      type: 'GET'
+      dataType: 'json'
+      crossDomain: 'true'
+      error: (jqXHR, textStatus, errorThrown) ->
+        console.log "check_rate_limit error: #{textStatus}"
+      success: (data) ->
+        if data.rate.remaining == 0
+          $(document.body).empty()
+          $(document.body).append($('<p>').text("You've exceeded GitHub's rate limit. Please wait #{data.rate.reset - Math.floor(Date.now() / 1000)} seconds."))
+          $(document.body).append($('<a>').attr('href',github_oauth_url()).text('Authenticate with GitHub'))
+        else
+          callback(callback_params)
+  else
+    $.ajax 'https://api.github.com/rate_limit',
+      type: 'GET'
+      dataType: 'json'
+      crossDomain: 'true'
+      error: (jqXHR, textStatus, errorThrown) ->
+        console.log "check_rate_limit error: #{textStatus}"
+      success: (data) ->
+        if data.rate.remaining == 0
+          $(document.body).empty()
+          $(document.body).append($('<p>').text("You've exceeded GitHub's rate limit for unauthenticated applications. Authenticate with GitHub (not yet implemented), or wait #{data.rate.reset - Math.floor(Date.now() / 1000)} seconds."))
+          $(document.body).append($('<a>').attr('href',github_oauth_url()).text('Authenticate with GitHub'))
+        else
+          callback(callback_params)
 
 format_page = (page) ->
   sprintf('%04d',parseInt(page))
@@ -60,7 +74,7 @@ hocr_handler = (req) ->
         console.log page_image
         $('.content').append($('<div>').attr('id','page_image'))
         $('.content').append($('<div>').attr('id','page_right'))
-        $.ajax page_image.url,
+        $.ajax page_image.url + "?access_token=#{get_cookie('access_token')}",
           type: 'GET'
           dataType: 'json'
           crossDomain: 'true'
@@ -69,7 +83,7 @@ hocr_handler = (req) ->
           success: (data) ->
             $('#page_image').append($('<img>').attr('style','width:100%').attr('src','data:image/jpeg;charset=utf-8;base64,'+data.content))
         console.log page_hocr
-        $.ajax page_hocr.url,
+        $.ajax page_hocr.url + "?access_token=#{get_cookie('access_token')}",
           type: 'GET'
           dataType: 'json'
           crossDomain: 'true'
@@ -89,13 +103,79 @@ no_repo = (req) ->
   if window.location.hash
     Davis.location.assign(new Davis.Request("#{window.location.pathname}#{window.location.hash}"))
 
+expires_in_to_date = (expires_in) ->
+  cookie_expires = new Date
+  cookie_expires.setTime(cookie_expires.getTime() + expires_in * 1000)
+  return cookie_expires
+
+set_cookie = (key, value, expires_in) ->
+  cookie = "#{key}=#{value}; "
+  cookie += "expires=#{expires_in_to_date(expires_in).toUTCString()}; "
+  cookie += "path=#{window.location.pathname.substring(0,window.location.pathname.lastIndexOf('/')+1)}"
+  document.cookie = cookie
+
+delete_cookie = (key) ->
+  set_cookie key, null, -1
+
+get_cookie = (key) ->
+  key += "="
+  for cookie_fragment in document.cookie.split(';')
+    cookie_fragment = cookie_fragment.replace(/^\s+/, '')
+    return cookie_fragment.substring(key.length, cookie_fragment.length) if cookie_fragment.indexOf(key) == 0
+  return null
+
+set_cookie_expiration_callback = ->
+  if get_cookie('access_token_expires_at')
+    expires_in = get_cookie('access_token_expires_at') - (new Date()).getTime()
+    console.log(expires_in) if github_friction_debug
+    setTimeout ( ->
+        console.log("cookie expired")
+        window.location.reload()
+      ), expires_in
+
+github_oauth_flow = (req) ->
+  console.log 'auth'
+  console.log window.location
+  console.log req.params['splat']
+  console.log hocr_reader_github_oauth['code']
+  if hocr_reader_github_oauth['code']
+    oauth_shim_params =
+      code: hocr_reader_github_oauth['code']
+      redirect_uri: hocr_reader_github_oauth['redirect_uri']
+      client_id: hocr_reader_github_oauth['client_id']
+      grant_url: 'https://github.com/login/oauth/access_token'
+    gatekeeper_redirect = "#{hocr_reader_github_oauth['gatekeeper_uri']}?#{$.param(oauth_shim_params)}"
+    console.log gatekeeper_redirect
+    window.location = gatekeeper_redirect
+  else if req.params['splat'].match(/^#/)
+    access_token = req.params['splat'].split('=')[1].split('&')[0]
+    console.log access_token
+    set_cookie('access_token',access_token,31536000)
+    set_cookie('access_token_expires_at',expires_in_to_date(31536000))
+    window.location = '{{ site.url }}/'
+  
 davis_app = Davis ->
   this.get '/', no_repo
   this.get '/hocr-reader/', no_repo
   this.get '/hocr-reader/#/read/:github_user/:github_repo', (req) ->
     Davis.location.assign(new Davis.Request("/hocr-reader/#/read/#{req.params['github_user']}/#{req.params['github_repo']}/0001"))
   this.get '/hocr-reader/#/read/:github_user/:github_repo/:page', hocr_reader
+  this.get '/hocr-reader/#/auth/*splat', github_oauth_flow
 
+github = new Github({
+  token: if get_cookie('access_token') then get_cookie('access_token') else ''
+  auth: 'oauth'
+})
+
+ 
 $(document).ready ->
+  console.log 'document.ready'
+  console.log window.location
+  console.log 'access_token: ' + get_cookie('access_token')
+  query_params = location.search.substring(1)
+  console.log query_params
+  if query_params.match(/^code=/)
+    hocr_reader_github_oauth['code'] = query_params.split('=')[1].split('&')[0]
+
   davis_app.start()
   Davis.location.assign(new Davis.Request("#{window.location.pathname}#{window.location.hash}"))
