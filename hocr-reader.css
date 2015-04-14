@@ -1,0 +1,9 @@
+#page_image{
+        width: 50%;
+        float:left;
+        }
+#page_right{
+        width: 50%;
+        float:left;
+        display: inline;
+        }

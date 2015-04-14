@@ -25,7 +25,7 @@ hocr_handler = (req) ->
           error: (jqXHR, textStatus, errorThrown) ->
             console.log "Image fetch error: #{textStatus}"
           success: (data) ->
-            $('#page_image').append($('<img>').attr('style','width:49%').attr('src','data:image/jpeg;charset=utf-8;base64,'+data.content))
+            $('#page_image').append($('<img>').attr('style','width:100%').attr('src','data:image/jpeg;charset=utf-8;base64,'+data.content))
         console.log page_hocr
         $.ajax page_hocr.url,
           type: 'GET'
@@ -36,7 +36,7 @@ hocr_handler = (req) ->
           success: (data) ->
             hocr_html = atob(decodeURIComponent(escape(data.content.replace(/\s/g, ""))))
             css_rewrite = hocr_html.replace('http://heml.mta.ca/Rigaudon/hocr.css','{{ site.url }}/hocr.css')
-            $('#page_right').append($('<iframe>').attr('style','width:49%').attr('height','800').attr('frameBorder','0').attr('src','data:text/html;charset=utf-8;base64,'+btoa(css_rewrite)))
+            $('#page_right').append($('<iframe>').attr('style','width:100%').attr('height','800').attr('frameBorder','0').attr('src','data:text/html;charset=utf-8;base64,'+btoa(css_rewrite)))
 
 
 
