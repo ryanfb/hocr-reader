@@ -25,8 +25,8 @@ make_nav_bar = (user, repo, page, total_pages) ->
   nav_bar = $('<div>').attr('id','nav_bar')
   nav_bar.append($('<a>',class:'nav_left').attr('href',"/hocr-reader/#/read/#{user}/#{repo}/1").text('First'))
   nav_bar.append($('<a>',class:'nav_left').attr('href',"/hocr-reader/#/read/#{user}/#{repo}/#{format_page(page - 1)}").text('Prev'))
-  nav_bar.append($('<a>',class:'nav_right').attr('href',"/hocr-reader/#/read/#{user}/#{repo}/#{format_page(page + 1)}").text('Next'))
   nav_bar.append($('<a>',class:'nav_right').attr('href',"/hocr-reader/#/read/#{user}/#{repo}/#{format_page(total_pages)}").text('Last'))
+  nav_bar.append($('<a>',class:'nav_right').attr('href',"/hocr-reader/#/read/#{user}/#{repo}/#{format_page(page + 1)}").text('Next'))
   $('.header').append(nav_bar)
 
 hocr_handler = (req) ->
@@ -47,7 +47,7 @@ hocr_handler = (req) ->
     if book
       repo.getTree book.sha, (err, book_tree) ->
         all_pages = _.filter(book_tree, (node) -> node.path.match(new RegExp("^p\d+\.html$")))
-        make_nav_bar(req.params['github_user'],req.params['github_repo'],page,all_pages.size)
+        make_nav_bar(req.params['github_user'],req.params['github_repo'],parseInt(page),all_pages.size)
         page_image = _.filter(book_tree, (node) -> node.path.match(new RegExp("^i#{page}\.jpg$")))[0]
         page_hocr = _.filter(book_tree, (node) -> node.path.match(new RegExp("^p#{page}\.html$")))[0]
         console.log page_image
