@@ -15,7 +15,7 @@
       <p>This is a client-side JavaScript reader for GitHub repositories with hOCR output.</p>
       <p>It is currently tailored for the repository format used by the <a href="https://github.com/OpenGreekAndLatin" target="_blank">Open Greek and Latin Project</a>.</p>
       <p>Browse volumes in the <a href="http://ryanfb.github.io/ogl-browser/">OpenGreekAndLatin OCR Browser</a>, check out a <a href="#/read/OpenGreekAndLatin/2013-08-15-07-51_operarecensuitri01libauoft_jp2_Kaibel_Round_4_3">sample volume</a>, or enter a GitHub repository name or URL below:</p>
-      <form onsubmit="window.location = window.location.pathname + '#/read/' + document.getElementById('repo_input').value.replace('https://github.com/','')">
+      <form onsubmit="window.location = window.location.pathname + '#/read/' + decodeURI(document.getElementById('repo_input').value).replace('https://github.com/','')">
         <input id="repo_input" type="text" name="repo" placeholder="OpenGreekAndLatin/uc1.31175001436685.2015-04-10-23-47" size="80"> <input type="submit" value="Read">
       </form>
     </body>
