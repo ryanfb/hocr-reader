@@ -18,20 +18,41 @@ check_rate_limit = () ->
         $(document.body).empty()
         $(document.body).append($('<p>').text("You've exceeded GitHub's rate limit for unauthenticated applications. Authenticate with GitHub, or wait #{data.rate.reset - Math.floor(Date.now() / 1000)} seconds"))
 
+format_page = (page) ->
+  sprintf('%04d',parseInt(page))
+
+make_nav_bar = (user, repo, page, total_pages) ->
+  nav_bar = $('<div>').attr('id','nav_bar')
+  nav_bar.append($('<a>',class:'nav_left').attr('href',"/hocr-reader/#/read/#{user}/#{repo}/1").text('First'))
+  nav_bar.append($('<a>',class:'nav_left').attr('href',"/hocr-reader/#/read/#{user}/#{repo}/#{format_page(page - 1)}").text('Prev'))
+  nav_bar.append($('<a>',class:'nav_right').attr('href',"/hocr-reader/#/read/#{user}/#{repo}/#{format_page(page + 1)}").text('Next'))
+  nav_bar.append($('<a>',class:'nav_right').attr('href',"/hocr-reader/#/read/#{user}/#{repo}/#{format_page(total_pages)}").text('Last'))
+  $('.header').append(nav_bar)
+
 hocr_handler = (req) ->
   console.log(req.params)
   $(document.body).empty()
+  container = $('<div>', class: 'container')
+  header = $('<div>', class: 'header')
+  content = $('<div>', class: 'content')
+  footer = $('<div>', class: 'footer')
+  container.append(header)
+  container.append(content)
+  container.append(footer)
+  $(document.body).append(container)
   repo = github.getRepo(req.params['github_user'],req.params['github_repo'])
   repo.getTree 'master', (err, tree) ->
     book = _.filter(tree, (node) -> (node.type == 'tree' && node.path.match(/\.book$/)))[0]
-    page = sprintf('%04d',req.params['page'])
+    page = format_page(req.params['page'])
     if book
       repo.getTree book.sha, (err, book_tree) ->
+        all_pages = _.filter(book_tree, (node) -> node.path.match(new RegExp("^p\d+\.html$")))
+        make_nav_bar(req.params['github_user'],req.params['github_repo'],page,all_pages.size)
         page_image = _.filter(book_tree, (node) -> node.path.match(new RegExp("^i#{page}\.jpg$")))[0]
         page_hocr = _.filter(book_tree, (node) -> node.path.match(new RegExp("^p#{page}\.html$")))[0]
         console.log page_image
-        $(document.body).append($('<div>').attr('id','page_image'))
-        $(document.body).append($('<div>').attr('id','page_right'))
+        $('.content').append($('<div>').attr('id','page_image'))
+        $('.content').append($('<div>').attr('id','page_right'))
         $.ajax page_image.url,
           type: 'GET'
           dataType: 'json'
