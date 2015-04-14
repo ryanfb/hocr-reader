@@ -49,7 +49,10 @@ make_nav_bar = (user, repo, page, total_pages) ->
   if page > 1
     nav_bar.append($('<a>',class:'nav_left').attr('href',"/hocr-reader/#/read/#{user}/#{repo}/1").text('First'))
     nav_bar.append($('<a>',class:'nav_left').attr('href',"/hocr-reader/#/read/#{user}/#{repo}/#{format_page(page - 1)}").text('Prev'))
-  nav_bar.append($('<span>',class:'nav_left').text("#{page} / #{total_pages}"))
+  page_jump_form = $('<form>',class:'nav_left').attr('onsubmit',"Davis.location.assign(new Davis.Request(\"#{window.location.pathname}#/read/#{user}/#{repo}/\"+$('#page_jump_id').val()))")
+  page_jump_form.append($('<input>').attr('type','text').attr('placeholder',page).attr('size','4').attr('id','page_jump_id'))
+  page_jump_form.append($('<label>').text(" / #{total_pages}"))
+  nav_bar.append(page_jump_form)
   if page < total_pages
     nav_bar.append($('<a>',class:'nav_right').attr('href',"/hocr-reader/#/read/#{user}/#{repo}/#{format_page(total_pages)}").text('Last'))
     nav_bar.append($('<a>',class:'nav_right').attr('href',"/hocr-reader/#/read/#{user}/#{repo}/#{format_page(page + 1)}").text('Next'))

@@ -5,7 +5,7 @@ html, body { height: 100%; margin: 0; padding: 0; }
 .content-body { display: table-cell; }
 
 .container { width: 100%; height: 100%; }
-#nav_bar, .header, .footer { padding: 10px 20px; background: #f7f7f7; }
+#nav_bar, .header, .footer { padding: .5em 1em 1em; background: #f7f7f7; }
 
 .nav_right {
   float: right;
