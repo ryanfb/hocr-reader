@@ -1,9 +1,14 @@
-#page_image{
-        width: 50%;
-        float:left;
-        }
-#page_right{
-        width: 50%;
-        float:left;
-        display: inline;
-        }
+#page_image {
+  width: 50%;
+  float:left;
+  padding-bottom: 100%;
+  margin-bottom: -100%;
+}
+#page_right {
+  width: 50%;
+  float:left;
+  display: inline;
+  padding-bottom: 100%;
+  margin-bottom: -100%;
+  background: #eec;
+}
