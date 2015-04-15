@@ -109,6 +109,8 @@ hocr_handler = (req) ->
             else
               $('#page_image').append($('<h2>').text('Page image not found'))
             if page_hocr
+              page_github_url = "https://github.com/#{req.params['github_user']}/#{req.params['github_repo']}/blob/master/#{req.params['github_repo']}.book/#{page_hocr.path}"
+              $('#nav_bar').append($('<a>',class:'nav_right').attr('href',page_github_url).attr('target','_blank').text('Open page in GitHub'))
               $.ajax page_hocr.url + (if get_cookie('access_token') then "?access_token=#{get_cookie('access_token')}" else ''),
                 type: 'GET'
                 dataType: 'json'
