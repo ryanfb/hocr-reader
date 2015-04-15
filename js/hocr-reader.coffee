@@ -61,52 +61,57 @@ make_nav_bar = (user, repo, page, total_pages) ->
     nav_bar.append($('<a>',class:'nav_right').attr('href',"/hocr-reader/#/read/#{user}/#{repo}/#{format_page(page + 1)}").text('Next'))
   $('.header').append(nav_bar)
 
+hocr_handler_mutex = 0
+
 hocr_handler = (req) ->
-  console.log(req.params)
-  $(document.body).empty()
-  container = $('<div>', class: 'container')
-  header = $('<div>', class: 'header')
-  content = $('<div>', class: 'content')
-  footer = $('<div>', class: 'footer')
-  container.append(header)
-  container.append(content)
-  container.append(footer)
-  $(document.body).append(container)
-  repo = github.getRepo(req.params['github_user'],req.params['github_repo'])
-  repo.getTree 'master', (err, tree) ->
-    book = _.filter(tree, (node) -> (node.type == 'tree' && node.path.match(/\.book$/)))[0]
-    page = format_page(req.params['page'])
-    if book
-      repo.getTree book.sha, (err, book_tree) ->
-        all_pages = _.filter(book_tree, (node) -> node.path.match(new RegExp("^p[0-9]+\.html$")))
-        make_nav_bar(req.params['github_user'],req.params['github_repo'],parseInt(page),all_pages.length)
-        page_image = _.filter(book_tree, (node) -> node.path.match(new RegExp("^i#{page}\.jpg$")))[0]
-        page_hocr = _.filter(book_tree, (node) -> node.path.match(new RegExp("^p#{page}\.html$")))[0]
-        console.log page_image
-        $('.content').append($('<div>').attr('id','page_image'))
-        $('.content').append($('<div>').attr('id','page_right'))
-        $.ajax page_image.url + (if get_cookie('access_token') then "?access_token=#{get_cookie('access_token')}" else ''),
-          type: 'GET'
-          dataType: 'json'
-          crossDomain: 'true'
-          error: (jqXHR, textStatus, errorThrown) ->
-            console.log "Image fetch error: #{textStatus}"
-          success: (data) ->
-            $('#page_image').append($('<img>').attr('style','width:100%').attr('src','data:image/jpeg;charset=utf-8;base64,'+data.content))
-        console.log page_hocr
-        $.ajax page_hocr.url + (if get_cookie('access_token') then "?access_token=#{get_cookie('access_token')}" else ''),
-          type: 'GET'
-          dataType: 'json'
-          crossDomain: 'true'
-          error: (jqXHR, textStatus, errorThrown) ->
-            console.log "hOCR fetch error: #{textStatus}"
-          success: (data) ->
-            hocr_html = atob(decodeURIComponent(escape(data.content.replace(/\s/g, ""))))
-            css_rewrite = if hocr_html.match('<link')
-              hocr_html.replace('http://heml.mta.ca/Rigaudon/hocr.css','{{ site.url }}/hocr.css')
-            else
-              hocr_html.replace('<head>',"<head>\n<link rel='stylesheet' type='text/css' href='{{ site.url }}/hocr.css'>")
-            $('#page_right').append($('<iframe>').attr('style','width:100%').attr('height','800').attr('frameBorder','0').attr('src','data:text/html;charset=utf-8;base64,'+btoa(css_rewrite)))
+  page = format_page(req.params['page'])
+  # mutex is needed here to prevent multiple Davis onLoad calls in e.g. Safari
+  unless hocr_handler_mutex == page
+    hocr_handler_mutex = page
+    console.log(req.params)
+    $(document.body).empty()
+    container = $('<div>', class: 'container')
+    header = $('<div>', class: 'header')
+    content = $('<div>', class: 'content')
+    footer = $('<div>', class: 'footer')
+    container.append(header)
+    container.append(content)
+    container.append(footer)
+    $(document.body).append(container)
+    repo = github.getRepo(req.params['github_user'],req.params['github_repo'])
+    repo.getTree 'master', (err, tree) ->
+      book = _.filter(tree, (node) -> (node.type == 'tree' && node.path.match(/\.book$/)))[0]
+      if book
+        repo.getTree book.sha, (err, book_tree) ->
+          all_pages = _.filter(book_tree, (node) -> node.path.match(new RegExp("^p[0-9]+\.html$")))
+          make_nav_bar(req.params['github_user'],req.params['github_repo'],parseInt(page),all_pages.length)
+          page_image = _.filter(book_tree, (node) -> node.path.match(new RegExp("^i#{page}\.jpg$")))[0]
+          page_hocr = _.filter(book_tree, (node) -> node.path.match(new RegExp("^p#{page}\.html$")))[0]
+          console.log page_image
+          $('.content').append($('<div>').attr('id','page_image'))
+          $('.content').append($('<div>').attr('id','page_right'))
+          $.ajax page_image.url + (if get_cookie('access_token') then "?access_token=#{get_cookie('access_token')}" else ''),
+            type: 'GET'
+            dataType: 'json'
+            crossDomain: 'true'
+            error: (jqXHR, textStatus, errorThrown) ->
+              console.log "Image fetch error: #{textStatus}"
+            success: (data) ->
+              $('#page_image').append($('<img>').attr('style','width:100%').attr('src','data:image/jpeg;charset=utf-8;base64,'+data.content))
+          console.log page_hocr
+          $.ajax page_hocr.url + (if get_cookie('access_token') then "?access_token=#{get_cookie('access_token')}" else ''),
+            type: 'GET'
+            dataType: 'json'
+            crossDomain: 'true'
+            error: (jqXHR, textStatus, errorThrown) ->
+              console.log "hOCR fetch error: #{textStatus}"
+            success: (data) ->
+              hocr_html = atob(decodeURIComponent(escape(data.content.replace(/\s/g, ""))))
+              css_rewrite = if hocr_html.match('<link')
+                hocr_html.replace('http://heml.mta.ca/Rigaudon/hocr.css','{{ site.url }}/hocr.css')
+              else
+                hocr_html.replace('<head>',"<head>\n<link rel='stylesheet' type='text/css' href='{{ site.url }}/hocr.css'>")
+              $('#page_right').append($('<iframe>').attr('style','width:100%').attr('height','800').attr('frameBorder','0').attr('src','data:text/html;charset=utf-8;base64,'+btoa(css_rewrite)))
 
 hocr_reader = (req) ->
   check_rate_limit(hocr_handler, req)
@@ -197,6 +202,8 @@ run_search = (req) ->
       $(document.body).append(results_ul)
 
 davis_app = Davis ->
+  this.configure ->
+    this.generateRequestOnPageLoad = true
   this.get '/', no_repo
   this.get '/hocr-reader/', no_repo
   this.get '/hocr-reader/#/read/:github_user/:github_repo', (req) ->
@@ -221,4 +228,3 @@ $(document).ready ->
     hocr_reader_github_oauth['code'] = query_params.split('=')[1].split('&')[0]
 
   davis_app.start()
-  Davis.location.assign(new Davis.Request("#{window.location.pathname}#{window.location.hash}"))
