@@ -4,7 +4,6 @@
 hocr_reader_github_oauth =
   client_id: '{{ site.github_api_key }}'
   redirect_uri: '{{ site.url }}/#/auth/'
-  gatekeeper_uri: 'https://auth-server.herokuapp.com/proxy'
 
 github_oauth_url = ->
   "https://github.com/login/oauth/authorize?#{$.param(hocr_reader_github_oauth)}"
@@ -177,7 +176,7 @@ github_oauth_flow = (req) ->
       redirect_uri: hocr_reader_github_oauth['redirect_uri']
       client_id: hocr_reader_github_oauth['client_id']
       grant_url: 'https://github.com/login/oauth/access_token'
-    gatekeeper_redirect = "#{hocr_reader_github_oauth['gatekeeper_uri']}?#{$.param(oauth_shim_params)}"
+    gatekeeper_redirect = "{{ site.oauth_proxy_url }}?#{$.param(oauth_shim_params)}"
     console.log gatekeeper_redirect
     window.location = gatekeeper_redirect
   else if req.params['splat'].match(/^#/)
