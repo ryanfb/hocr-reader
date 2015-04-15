@@ -80,38 +80,50 @@ hocr_handler = (req) ->
     $(document.body).append(container)
     repo = github.getRepo(req.params['github_user'],req.params['github_repo'])
     repo.getTree 'master', (err, tree) ->
+      if err
+        $('.content').append($('<h1>').text('Error retrieving repository contents'))
+        $('.content').append($('<p>').append($('<a>').attr('href',"https://github.com/#{req.params['github_user']}/#{req.params['github_repo']}/").text('View Repository on GitHub')))
       book = _.filter(tree, (node) -> (node.type == 'tree' && node.path.match(/\.book$/)))[0]
       if book
         repo.getTree book.sha, (err, book_tree) ->
           all_pages = _.filter(book_tree, (node) -> node.path.match(new RegExp("^p[0-9]+\.html$")))
-          make_nav_bar(req.params['github_user'],req.params['github_repo'],parseInt(page),all_pages.length)
-          page_image = _.filter(book_tree, (node) -> node.path.match(new RegExp("^i#{page}\.jpg$")))[0]
-          page_hocr = _.filter(book_tree, (node) -> node.path.match(new RegExp("^p#{page}\.html$")))[0]
-          console.log page_image
-          $('.content').append($('<div>').attr('id','page_image'))
-          $('.content').append($('<div>').attr('id','page_right'))
-          $.ajax page_image.url + (if get_cookie('access_token') then "?access_token=#{get_cookie('access_token')}" else ''),
-            type: 'GET'
-            dataType: 'json'
-            crossDomain: 'true'
-            error: (jqXHR, textStatus, errorThrown) ->
-              console.log "Image fetch error: #{textStatus}"
-            success: (data) ->
-              $('#page_image').append($('<img>').attr('style','width:100%').attr('src','data:image/jpeg;charset=utf-8;base64,'+data.content))
-          console.log page_hocr
-          $.ajax page_hocr.url + (if get_cookie('access_token') then "?access_token=#{get_cookie('access_token')}" else ''),
-            type: 'GET'
-            dataType: 'json'
-            crossDomain: 'true'
-            error: (jqXHR, textStatus, errorThrown) ->
-              console.log "hOCR fetch error: #{textStatus}"
-            success: (data) ->
-              hocr_html = atob(decodeURIComponent(escape(data.content.replace(/\s/g, ""))))
-              css_rewrite = if hocr_html.match('<link')
-                hocr_html.replace('http://heml.mta.ca/Rigaudon/hocr.css','{{ site.url }}/hocr.css')
-              else
-                hocr_html.replace('<head>',"<head>\n<link rel='stylesheet' type='text/css' href='{{ site.url }}/hocr.css'>")
-              $('#page_right').append($('<iframe>').attr('style','width:100%').attr('height','800').attr('frameBorder','0').attr('src','data:text/html;charset=utf-8;base64,'+btoa(css_rewrite)))
+          if all_pages.length == 0
+            $('.content').append($('<h1>').text('No pages found for book :('))
+            $('.content').append($('<p>').append($('<a>').attr('href',"https://github.com/#{req.params['github_user']}/#{req.params['github_repo']}/").text('View Repository on GitHub')))
+          else
+            make_nav_bar(req.params['github_user'],req.params['github_repo'],parseInt(page),all_pages.length)
+            page_image = _.filter(book_tree, (node) -> node.path.match(new RegExp("^i#{page}\.jpg$")))[0]
+            page_hocr = _.filter(book_tree, (node) -> node.path.match(new RegExp("^p#{page}\.html$")))[0]
+            console.log page_image
+            $('.content').append($('<div>').attr('id','page_image'))
+            $('.content').append($('<div>').attr('id','page_right'))
+            if page_image
+              $.ajax page_image.url + (if get_cookie('access_token') then "?access_token=#{get_cookie('access_token')}" else ''),
+                type: 'GET'
+                dataType: 'json'
+                crossDomain: 'true'
+                error: (jqXHR, textStatus, errorThrown) ->
+                  console.log "Image fetch error: #{textStatus}"
+                success: (data) ->
+                  $('#page_image').append($('<img>').attr('style','width:100%').attr('src','data:image/jpeg;charset=utf-8;base64,'+data.content))
+            else
+              $('#page_image').append($('<h2>').text('Page image not found'))
+            if page_hocr
+              $.ajax page_hocr.url + (if get_cookie('access_token') then "?access_token=#{get_cookie('access_token')}" else ''),
+                type: 'GET'
+                dataType: 'json'
+                crossDomain: 'true'
+                error: (jqXHR, textStatus, errorThrown) ->
+                  console.log "hOCR fetch error: #{textStatus}"
+                success: (data) ->
+                  hocr_html = atob(decodeURIComponent(escape(data.content.replace(/\s/g, ""))))
+                  css_rewrite = if hocr_html.match('<link')
+                    hocr_html.replace('http://heml.mta.ca/Rigaudon/hocr.css','{{ site.url }}/hocr.css')
+                  else
+                    hocr_html.replace('<head>',"<head>\n<link rel='stylesheet' type='text/css' href='{{ site.url }}/hocr.css'>")
+                  $('#page_right').append($('<iframe>').attr('style','width:100%').attr('height','800').attr('frameBorder','0').attr('src','data:text/html;charset=utf-8;base64,'+btoa(css_rewrite)))
+            else
+              $('#page_right').append($('<h2>').text('Page hOCR not found'))
 
 hocr_reader = (req) ->
   check_rate_limit(hocr_handler, req)
