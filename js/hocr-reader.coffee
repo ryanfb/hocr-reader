@@ -4,6 +4,7 @@
 hocr_reader_github_oauth =
   client_id: '{{ site.github_api_key }}'
   redirect_uri: '{{ site.url }}/#/auth/'
+  gatekeeper_uri: '{{ site.gatekeeper_uri }}'
 
 github_oauth_url = ->
   "https://github.com/login/oauth/authorize?#{$.param(hocr_reader_github_oauth)}"
@@ -133,7 +134,7 @@ no_repo = (req) ->
   console.log('no repo')
   console.log window.location
   if window.location.hash
-    Davis.location.assign(new Davis.Request("#{window.location.pathname}#{window.location.hash}"))
+    Davis.location.assign(new Davis.Request("#{window.location.pathname}#{window.location.hash}#{window.location.search}"))
 
 expires_in_to_date = (expires_in) ->
   cookie_expires = new Date
@@ -159,7 +160,7 @@ get_cookie = (key) ->
 set_cookie_expiration_callback = ->
   if get_cookie('access_token_expires_at')
     expires_in = get_cookie('access_token_expires_at') - (new Date()).getTime()
-    console.log(expires_in) if github_friction_debug
+    console.log(expires_in)
     setTimeout ( ->
         console.log("cookie expired")
         window.location.reload()
@@ -168,23 +169,24 @@ set_cookie_expiration_callback = ->
 github_oauth_flow = (req) ->
   console.log 'auth'
   console.log window.location
-  console.log req.params['splat']
-  console.log hocr_reader_github_oauth['code']
-  if hocr_reader_github_oauth['code']
-    oauth_shim_params =
-      code: hocr_reader_github_oauth['code']
-      redirect_uri: hocr_reader_github_oauth['redirect_uri']
-      client_id: hocr_reader_github_oauth['client_id']
-      grant_url: 'https://github.com/login/oauth/access_token'
-    gatekeeper_redirect = "{{ site.oauth_proxy_url }}?#{$.param(oauth_shim_params)}"
-    console.log gatekeeper_redirect
-    window.location = gatekeeper_redirect
-  else if req.params['splat'].match(/^#/)
-    access_token = req.params['splat'].split('=')[1].split('&')[0]
-    console.log access_token
-    set_cookie('access_token',access_token,31536000)
-    set_cookie('access_token_expires_at',expires_in_to_date(31536000))
-    window.location = '{{ site.url }}/'
+  console.log req.params
+  
+  if req.params['code']?
+    console.log('got code')
+    # use gatekeeper to exchange code for token https://github.com/prose/gatekeeper
+    console.log(hocr_reader_github_oauth['gatekeeper_uri'])
+    $.ajax "#{hocr_reader_github_oauth['gatekeeper_uri']}/#{req.params['code']}",
+      type: 'GET'
+      dataType: 'json'
+      crossDomain: 'true'
+      error: (jqXHR, textStatus, errorThrown) ->
+        console.log "Access Token Exchange Error: #{textStatus}"
+      success: (data) ->
+        console.log('gatekeeper success')
+        console.log(data)
+        set_cookie('access_token',data.token,31536000)
+        set_cookie('access_token_expires_at',expires_in_to_date(31536000))
+        window.location = '{{ site.url }}/'
 
 run_search = (req) ->
   query = "repo:#{req.params['github_user']}/#{req.params['github_repo']} language:html #{req.params['query']}"
@@ -237,7 +239,7 @@ $(document).ready ->
   console.log 'access_token: ' + get_cookie('access_token')
   query_params = location.search.substring(1)
   console.log query_params
-  if query_params.match(/^code=/)
-    hocr_reader_github_oauth['code'] = query_params.split('=')[1].split('&')[0]
+  # if query_params.match(/^code=/)
+  #  hocr_reader_github_oauth['code'] = query_params.split('=')[1].split('&')[0]
 
   davis_app.start()
